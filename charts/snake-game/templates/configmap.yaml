@@ -1,0 +1,47 @@
+{{- if .Values.config }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "snake-game.fullname" . }}-config
+  labels:
+    {{- include "snake-game.labels" . | nindent 4 }}
+data:
+  {{- range $key, $value := .Values.config }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}
+{{- end }}
+
+{{- if .Values.app.version1.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "snake-game.fullname" . }}-v1-config
+  labels:
+    {{- include "snake-game.labels" . | nindent 4 }}
+    app.kubernetes.io/version: "1.0"
+data:
+  GAME_SETTINGS: |
+    {
+      "speed": "medium",
+      "grid_size": 20,
+      "max_score": 1000
+    }
+{{- end }}
+
+{{- if .Values.app.version2.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "snake-game.fullname" . }}-v2-config
+  labels:
+    {{- include "snake-game.labels" . | nindent 4 }}
+    app.kubernetes.io/version: "2.0"
+data:
+  GAME_SETTINGS: |
+    {
+      "speed": "adjustable",
+      "grid_size": 30,
+      "max_score": 2000,
+      "power_ups": true
+    }
+{{- end }}

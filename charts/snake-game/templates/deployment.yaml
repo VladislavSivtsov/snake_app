@@ -1,0 +1,55 @@
+{{- if .Values.app.version1.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "snake-game.fullname" . }}-v1
+  labels:
+    {{- include "snake-game.labels" . | nindent 4 }}
+    app.kubernetes.io/version: "1.0"
+spec:
+  replicas: {{ .Values.app.version1.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "snake-game.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/version: "1.0"
+  template:
+    metadata:
+      labels:
+        {{- include "snake-game.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/version: "1.0"
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}-v1
+          image: "{{ .Values.app.version1.image.repository }}:{{ .Values.app.version1.image.tag }}"
+          imagePullPolicy: {{ .Values.app.version1.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 5000
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            {{- toYaml .Values.app.version1.resources | nindent 12 }}
+          env:
+            - name: DB_HOST
+              value: "{{ .Release.Name }}-postgresql"
+            - name: DB_NAME
+              value: "snake_game"
+            - name: DB_USER
+              value: "postgres"
+            - name: DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-postgresql
+                  key: postgres-password
+{{- end }}

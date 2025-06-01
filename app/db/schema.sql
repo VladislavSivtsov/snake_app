@@ -1,0 +1,22 @@
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE game_sessions (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id),
+    started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ended_at TIMESTAMP,
+    score INTEGER
+);
+
+CREATE TABLE leaderboard (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id),
+    score INTEGER NOT NULL,
+    game_version INTEGER NOT NULL,
+    achieved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

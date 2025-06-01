@@ -1,0 +1,77 @@
+# Global settings
+global:
+  appName: snake-game
+  environment: production
+
+# Application settings
+app:
+  version1:
+    enabled: true
+    replicaCount: 2
+    image:
+      repository: ghcr.io/vladislavsivtsov/snake-app-version1
+      tag: latest
+      pullPolicy: Always
+    service:
+      type: ClusterIP
+      port: 5000
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 200m
+        memory: 256Mi
+
+  version2:
+    enabled: false
+    replicaCount: 2
+    image:
+      repository: ghcr.io/vladislavsivtsov/snake-app-version2
+      tag: latest
+      pullPolicy: Always
+    service:
+      type: ClusterIP
+      port: 5000
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 200m
+        memory: 256Mi
+
+# Database settings
+postgresql:
+  enabled: true
+  persistence:
+    enabled: true
+    size: 5Gi
+  global:
+    postgresql:
+      auth:
+        database: snake_game
+        username: postgres
+        password: password
+  primary:
+    persistence:
+      enabled: true
+      size: 5Gi
+    resources:
+      limits:
+        cpu: 500m
+        memory: 1Gi
+      requests:
+        cpu: 250m
+        memory: 512Mi
+
+# Ingress settings
+ingress:
+  enabled: true
+  className: "nginx"
+  hosts:
+    - host: snake-game.k8s-29.sa
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []

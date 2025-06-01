@@ -1,0 +1,59 @@
+name: CD Pipeline
+
+on:
+  push:
+    branches: [ master ]
+    paths:
+      - 'app/**'
+      - 'charts/**'
+      - '.github/workflows/cd.yaml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Install Helm
+      uses: azure/setup-helm@v1
+      with:
+        version: 'v3.7.1'
+        
+    - name: Install kubectl
+      uses: azure/setup-kubectl@v1
+      
+    - name: Configure Kubernetes
+      run: |
+        echo "${{ secrets.KUBE_CONFIG }}" > kubeconfig.yaml
+        export KUBECONFIG=kubeconfig.yaml
+        
+    - name: Add Helm repositories
+      run: |
+        helm repo add bitnami https://charts.bitnami.com/bitnami
+        helm repo update
+        
+    - name: Deploy to Kubernetes
+      run: |
+        cd charts/snake-game
+        helm dependency update
+        helm upgrade --install snake-game . \
+          --namespace snake-game \
+          --create-namespace \
+          --set app.version1.enabled=true \
+          --set app.version2.enabled=false \
+          --set ingress.hosts[0].host=snake-game.k8s-29.sa 
+          
+    - name: Verify deployment
+      run: |
+        kubectl rollout status deployment/snake-game-v1 -n snake-game
+        kubectl get pods -n snake-game
+        
+    - name: Send notification
+      if: always()
+      uses: rtCamp/action-slack-notify@v2
+      env:
+        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        SLACK_COLOR: ${{ job.status }}"
+        SLACK_TITLE: "Deployment Status"
+        SLACK_MESSAGE: "Deployment to production ${{ job.status }}"

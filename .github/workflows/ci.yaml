@@ -1,0 +1,65 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        version: [1, 2]
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.9'
+    
+    - name: Install dependencies
+      run: |
+        cd app/version${{ matrix.version }}
+        pip install -r requirements.txt
+        pip install pytest pytest-cov
+        
+    - name: Run tests
+      run: |
+        cd app/version${{ matrix.version }}
+        pytest --cov=./ --cov-report=xml
+        
+    - name: Upload coverage
+      uses: codecov/codecov-action@v1
+      with:
+        file: ./app/version${{ matrix.version }}/coverage.xml
+        flags: version${{ matrix.version }}
+        
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        version: [1, 2]
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v1
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Build and push
+      run: |
+        cd app/version${{ matrix.version }}
+        docker build -t ghcr.io/vladislavsivtsov/snake-app-version${{ matrix.version }}:latest .
+        docker push ghcr.io/vladislavsivtsov/snake-app-version${{ matrix.version }}:latest
+        
+    - name: Update Helm chart version
+      uses: keller00/helm-update-version-action@master
+      with:
+        chart-dir: charts/snake-game
